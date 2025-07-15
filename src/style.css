@@ -1,1 +1,60 @@
 @import "tailwindcss";
+
+/* Styles personnalisés pour l'application */
+.nav-btn {
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
+}
+
+.nav-btn:hover {
+    background-color: #f3f4f6;
+    color: #2563eb;
+}
+
+.nav-btn.active {
+    background-color: #eff6ff;
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+}
+
+/* Styles pour l'étiquette */
+.etiquette {
+    border: 2px dashed #9ca3af;
+    padding: 1rem;
+    background-color: white;
+    font-family: 'Courier New', monospace;
+    page-break-inside: avoid;
+}
+
+/* Responsive design pour tablette */
+@media (max-width: 768px) {
+    .nav-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+}
+
+/* Focus styles pour l'accessibilité */
+input:focus, select:focus, button:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* Styles pour les états de chargement */
+.loading {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+    border-radius: 50%;
+    height: 1rem;
+    width: 1rem;
+    border-bottom: 2px solid white;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
