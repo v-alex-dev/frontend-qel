@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR code reader</title>
+    <style>
+        #qrcode {
+  width:160px;
+  height:160px;
+  margin-top:15px;
+}
+    </style>
+</head>
+<body>
+    <input id="text" type="text" value="77" style="width:80%" /><br />
+<div id="qrcode"></div>
+<script src="qrcode.min.js"></script>
+<script>
+    let qrcode = new QRCode("qrcode",{
+    width: 128,
+    height: 128,
+    colorDark : "#000000",
+    colorLight : "#ffffff",
+    //correctLevel : QRCode.CorrectLevel.H
+});
+
+const text = document.querySelector('#text')
+
+function makeCode () {		
+	let elText = text;
+	
+	if (!elText.value) {
+		alert("Input a text");
+		text.focus();
+		return;
+	}
+	
+	qrcode.makeCode(text.value);
+}
+
+makeCode();
+
+text.addEventListener("blur", function () {
+		makeCode();
+	})
+text.addEventListener("keyup", function (e) {
+		if (e.keyCode == 13) {
+			makeCode();
+		}
+	});
+</script>
+</body>
+</html>

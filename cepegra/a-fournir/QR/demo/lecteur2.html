@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lecteur QR Code</title>
+  <style>
+    #reader {
+      max-width: 500px;
+      margin: auto;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="result"></div>
+  <div id="reader"></div>
+
+  <script src="html5-qrcode.min.js"></script>
+  <script>
+  const qrRegionId = "reader";
+  const html5QrCode = new Html5Qrcode(qrRegionId);
+
+  function onScanSuccess(decodedText, decodedResult) {
+    console.log(`✅ Code lu : ${decodedText}`);
+    document.getElementById('result').innerText = decodedText;
+
+    html5QrCode.stop()
+      .then(() => {
+        console.log("🛑 Scanner arrêté.");
+        return html5QrCode.clear(); // <-- important de retourner
+      })
+      .then(() => {
+        console.log("🧹 Scanner nettoyé.");
+        document.getElementById(qrRegionId).remove();
+
+        // Optionnel : libération de sécurité (caméra au cas où)
+        /*
+        if (navigator.mediaDevices?.getUserMedia) {
+          navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+            stream.getTracks().forEach(track => track.stop());
+            console.log("🎥 Piste caméra libérée manuellement.");
+          }).catch(err => console.warn("Pas d'accès à la caméra :", err));
+        }
+        */
+      })
+      .catch(err => {
+        console.error("Erreur à l'arrêt ou nettoyage :", err);
+      });
+  }
+
+  function onScanFailure(error) {
+    // facultatif : console.warn("Échec scan", error);
+  }
+
+  Html5Qrcode.getCameras().then(devices => {
+    if (devices && devices.length) {
+      const cameraId = devices[0].id;
+      html5QrCode.start(
+        cameraId,
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 }
+        },
+        onScanSuccess,
+        onScanFailure
+      ).catch(err => {
+        console.error("Erreur démarrage : ", err);
+      });
+    }
+  }).catch(err => {
+    console.error("Impossible d'accéder à la caméra :", err);
+  });
+</script>
+
+</body>
+</html>

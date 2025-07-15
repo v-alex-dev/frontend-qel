@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecteur</title>
+  <style>
+    #reader {
+      max-height: 500px !important;
+      max-width: 500Px !important;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="result"></div>
+  <div id="reader" width="600px"></div>
+  <script src="html5-qrcode.min.js"></script>
+  <script>
+    let html5QrcodeScanner = null
+
+    function onScanSuccess(decodedText, decodedResult) {
+  // handle the scanned code as you like, for example:
+  console.log(`Code matched = ${decodedText}`, decodedResult)
+  document.getElementById('result').innerText = decodedText
+  document.getElementById('reader').classList.add('hidden')
+  html5QrcodeScanner.clear()
+  /*
+  html5QrcodeScanner.stop().then((ignore) => {
+  console.log('stopped')
+}).catch((err) => {
+  console.log(err)
+});
+*/
+//document.getElementById('reader').remove()
+}
+
+function onScanFailure(error) {
+  // handle scan failure, usually better to ignore and keep scanning.
+  // for example:
+  //console.warn(`Code scan error = ${error}`);
+}
+
+html5QrcodeScanner = new Html5QrcodeScanner(
+  "reader",
+  { fps: 10, qrbox: {width: 250, height: 250} },
+  /* verbose= */ false);
+html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+  </script>
+</body>
+</html>
