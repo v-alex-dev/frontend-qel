@@ -17,9 +17,6 @@ async function apiCall(endpoint, options = {}) {
       ...options,
     };
 
-    console.log("API Call - URL:", url); // Debug
-    console.log("API Call - Config:", config); // Debug
-
     const response = await fetch(url, config);
 
     if (!response.ok) {
@@ -27,23 +24,19 @@ async function apiCall(endpoint, options = {}) {
       let errorMessage = `Erreur API: ${response.status}`;
       try {
         const errorData = await response.json();
-        console.error("Détails de l'erreur API:", errorData);
+
         if (errorData.message) {
           errorMessage += ` - ${errorData.message}`;
         }
         if (errorData.errors) {
-          console.error("Erreurs de validation:", errorData.errors);
           errorMessage += ` - Erreurs: ${JSON.stringify(errorData.errors)}`;
         }
-      } catch (e) {
-        console.error("Impossible de parser le JSON d'erreur");
-      }
+      } catch (e) {}
       throw new Error(errorMessage);
     }
 
     return await response.json();
   } catch (error) {
-    console.error("Erreur lors de l'appel API:", error);
     throw error;
   }
 }
