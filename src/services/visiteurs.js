@@ -46,9 +46,34 @@ async function enregistrerRetour(visiteurData) {
   });
 }
 
+async function getVisiteurByBadgeId(badgeId) {
+  try {
+    // Utiliser GET comme pour l'email, mais encoder correctement l'UUID
+    const encodedBadgeId = encodeURIComponent(badgeId);
+    const result = await apiCall(
+      `/v1/visitor/badge?badge_id=${encodedBadgeId}`
+    );
+
+    // Adapter la réponse selon la structure retournée par Laravel
+    if (result && result.visit && result.visit.visitor) {
+      const visiteur = {
+        ...result.visit.visitor,
+        last_visit: result.visit,
+      };
+      return visiteur;
+    } else {
+      throw new Error("Visiteur non trouvé");
+    }
+  } catch (error) {
+    console.error("Erreur détaillée:", error);
+    throw error;
+  }
+}
+
 export {
   getVisiteurByEmail,
   enregistrerEntree,
   enregistrerSortie,
   enregistrerRetour,
+  getVisiteurByBadgeId,
 };
