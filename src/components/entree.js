@@ -2,7 +2,10 @@
 import { enregistrerEntree } from "../services/visiteurs.js";
 import { getPersonnel } from "../services/personnel.js";
 import { getFormationsDuJour } from "../services/formations.js";
-import { getVisiteurByEmail } from "../services/visiteurs.js";
+import {
+  getVisiteurByEmail,
+  getVisiteurByBadgeId,
+} from "../services/visiteurs.js";
 import { isValidEmail, showNotification, cleanFormData } from "../utils.js";
 
 // Variables globales pour stocker les données
@@ -12,16 +15,11 @@ let formations = [];
 // Initialiser le composant d'entrée
 async function initEntreeComponent() {
   try {
-
-
     // Charger les données nécessaires
 
     personnel = await getPersonnel();
 
-
-
     formations = await getFormationsDuJour();
-
 
     // Vérifier que les données sont des tableaux
     if (!Array.isArray(personnel)) {
@@ -67,6 +65,19 @@ function createEntreeInterface() {
             <!-- Section recherche visiteur existant -->
             <div class="bg-white p-6 rounded-lg shadow-lg">
                 <h2 class="text-xl font-bold text-center mb-4 text-green-600">Visiteur de retour ?</h2>
+                
+                <!-- Recherche par badge ID -->
+                <div class="max-w-md mx-auto">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Badge id</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="search-badgeId" placeholder="Votre badge ID"
+                               class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <button type="button" id="search-by-badgeId" 
+                                class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
+                            Rechercher
+                        </button>
+                    </div>
+                </div>
                 
                 <!-- Recherche par email -->
                 <div class="max-w-md mx-auto">
@@ -214,7 +225,6 @@ function remplirMenuPersonnel() {
 
     // Debug: afficher la structure de l'objet si undefined
     if (nom.includes("inconnu") || prenom.includes("inconnu")) {
-
     }
 
     selectPersonnel.appendChild(option);
@@ -272,6 +282,7 @@ function attachEntreeEvents() {
   );
   const formulaireEntree = document.getElementById("entree-form");
   const searchByEmail = document.getElementById("search-by-email");
+  const searchByBadgeId = document.getElementById("search-by-badgeId");
 
   console.log(
     "attachEntreeEvents: Nombre de boutons radio trouvés:",
@@ -280,7 +291,6 @@ function attachEntreeEvents() {
 
   // Gérer l'affichage conditionnel des menus
   typeVisiteRadios.forEach((radio, index) => {
-
     radio.addEventListener("change", gererAffichageMenus);
   });
 
@@ -293,30 +303,27 @@ function attachEntreeEvents() {
   if (searchByEmail) {
     searchByEmail.addEventListener("click", rechercherParEmail);
   }
+
+  if (searchByBadgeId) {
+    searchByBadgeId.addEventListener("click", rechercherParBadgeId);
+  }
 }
 
 // Gérer l'affichage des menus selon le type de visite
 function gererAffichageMenus() {
-
-
   const typeVisite = document.querySelector(
     'input[name="type-visite"]:checked'
   )?.value;
   const divPersonnel = document.getElementById("div-personnel");
   const divFormations = document.getElementById("div-formations");
 
-
-
   if (typeVisite === "personnel") {
-
     divPersonnel?.classList.remove("hidden");
     divFormations?.classList.add("hidden");
   } else if (typeVisite === "formation") {
-
     divPersonnel?.classList.add("hidden");
     divFormations?.classList.remove("hidden");
   } else {
-
     divPersonnel?.classList.add("hidden");
     divFormations?.classList.add("hidden");
   }
@@ -344,12 +351,39 @@ async function rechercherParEmail() {
   }
 }
 
+async function rechercherParBadgeId() {
+  const badgeId = document.getElementById("search-badgeId").value.trim();
+  console.log("Recherche par badge ID:", badgeId); // Debug
+
+  if (!badgeId) {
+    showNotification("Veuillez saisir un badge ID", "error");
+    return;
+  }
+
+  try {
+    showNotification("Recherche en cours...", "info");
+    const visiteur = await getVisiteurByBadgeId(badgeId);
+    afficherResultatRecherche(visiteur);
+  } catch (error) {
+    console.error("Erreur lors de la recherche par badge ID:", error);
+
+    // Vérifier si c'est une erreur réseau/CORS
+    if (error.message && error.message.includes("fetch")) {
+      showNotification(
+        "Erreur de connexion au serveur. Veuillez réessayer.",
+        "error"
+      );
+    } else {
+      showNotification("Visiteur non trouvé avec ce badge ID", "error");
+    }
+    cacherResultatRecherche();
+  }
+}
+
 // Afficher le résultat de recherche
 function afficherResultatRecherche(visiteur) {
   const searchResult = document.getElementById("search-result");
   const searchDetails = document.getElementById("search-details");
-
-
 
   // Déterminer le statut selon la dernière visite
   let statut = "Jamais venu";
@@ -421,8 +455,6 @@ async function gererSoumissionEntree(event) {
   }
 
   try {
-
-
     // Déterminer le purpose et les IDs selon le type de visite choisi
     let purpose, staffMemberId, trainingId;
 
@@ -446,8 +478,6 @@ async function gererSoumissionEntree(event) {
       training_id: trainingId, // ID de la formation si formation
     });
 
-
-
     // Enregistrer l'entrée
     const resultat = await enregistrerEntree(visiteurData);
 
@@ -469,8 +499,6 @@ async function gererSoumissionEntree(event) {
 function afficherBadge(apiResponse) {
   const divBadge = document.getElementById("badge-visiteur");
   if (!divBadge) return;
-
-
 
   // Extraire les données de la réponse selon la doc API
   const visitor = apiResponse.visitor;
