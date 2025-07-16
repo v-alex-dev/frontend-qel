@@ -42,9 +42,6 @@ function createAppInterface() {
                         <button id="nav-sortie" class="nav-btn px-6 py-3 font-medium rounded-t-lg">
                             📤 Sortie
                         </button>
-                        <button id="nav-retour" class="nav-btn px-6 py-3 font-medium rounded-t-lg">
-                            🔄 Retour
-                        </button>
                     </div>
                 </div>
             </nav>
@@ -72,9 +69,6 @@ function attachNavEvents() {
   document
     .getElementById("nav-sortie")
     .addEventListener("click", () => showView("sortie"));
-  document
-    .getElementById("nav-retour")
-    .addEventListener("click", () => showView("retour"));
 }
 
 // Afficher une vue spécifique
