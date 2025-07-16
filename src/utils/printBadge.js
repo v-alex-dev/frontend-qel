@@ -84,7 +84,7 @@ function generateBadgeHTML(badgeData) {
         }
         
         .badge-container {
-            width: 85mm;
+            width: 100mm;
             height: 54mm;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 12px;
@@ -150,7 +150,7 @@ function generateBadgeHTML(badgeData) {
         }
         
         .qr-section {
-            width: 60px;
+            width: 90px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -286,8 +286,8 @@ function generateQRCodeForPrint(printWindow, badgeId) {
         printWindow.document.getElementById("badge-qrcode-print"),
         {
           text: badgeId,
-          width: 50,
-          height: 50,
+          width: 80,
+          height: 80,
           colorDark: "#000000",
           colorLight: "#ffffff",
           correctLevel: printWindow.QRCode.CorrectLevel.M,
@@ -298,7 +298,7 @@ function generateQRCodeForPrint(printWindow, badgeId) {
       const qrContainer =
         printWindow.document.getElementById("badge-qrcode-print");
       qrContainer.innerHTML = `
-        <div style="width:50px;height:50px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:8px;text-align:center;">
+        <div style="width:80px;height:80px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;text-align:center;">
           QR<br>${badgeId}
         </div>
       `;
