@@ -56,7 +56,7 @@ export function initQRScanner(containerId, onSuccess, onError = null) {
 
   // Fonction de succès par défaut
   function defaultOnSuccess(decodedText, decodedResult) {
-    console.log(`QR Code scanné: ${decodedText}`, decodedResult);
+    // QR Code scanné avec succès
 
     // Arrêter le scanner
     scanner.clear();
@@ -90,7 +90,7 @@ export function stopQRScanner(scanner) {
     scanner
       .clear()
       .then(() => {
-        console.log("Scanner QR arrêté");
+        // Scanner QR arrêté
       })
       .catch((err) => {
         console.error("Erreur lors de l'arrêt du scanner:", err);

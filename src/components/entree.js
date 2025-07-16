@@ -307,7 +307,7 @@ function remplirMenuFormations() {
 
     // Debug: afficher la structure de l'objet si undefined
     if (intitule.includes("inconnu") || local.includes("inconnu")) {
-      console.log("Structure de l'objet formation:", formation);
+      // Structure de l'objet formation disponible
     }
 
     selectFormations.appendChild(option);
@@ -327,11 +327,6 @@ function attachEntreeEvents() {
   const btnSearchManual = document.getElementById("btn-search-manual");
   const btnSearchQR = document.getElementById("btn-search-qr");
   const btnStopScanner = document.getElementById("btn-stop-scanner");
-
-  console.log(
-    "attachEntreeEvents: Nombre de boutons radio trouvés:",
-    typeVisiteRadios.length
-  ); // Debug
 
   // Gérer l'affichage conditionnel des menus
   typeVisiteRadios.forEach((radio, index) => {
@@ -410,7 +405,7 @@ async function rechercherParEmail() {
 
 async function rechercherParBadgeId() {
   const badgeId = document.getElementById("search-badgeId").value.trim();
-  console.log("Recherche par badge ID:", badgeId); // Debug
+  // Recherche par badge ID
 
   if (!badgeId) {
     showNotification("Veuillez saisir un badge ID", "error");
@@ -784,7 +779,7 @@ function startQRScanner() {
 
 // Callback quand un QR code est scanné avec succès
 async function onQRCodeScanned(decodedText, decodedResult) {
-  console.log(`QR Code scanné: ${decodedText}`);
+  // QR Code scanné pour entrée
 
   // Arrêter le scanner
   stopCurrentScanner();

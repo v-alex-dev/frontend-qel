@@ -148,8 +148,6 @@ async function rechercherParEmail() {
 
 // Gérer le QR Code scanné
 async function handleQRCodeScanned(decodedText) {
-  console.log(`QR Code scanné pour sortie: ${decodedText}`);
-
   // Arrêter le scanner
   if (currentQRScanner) {
     stopQRScanner(currentQRScanner);
@@ -171,7 +169,6 @@ async function handleQRCodeScanned(decodedText) {
     afficherInfoVisiteur(visiteur);
     showNotification("Visiteur trouvé via QR Code !", "success");
   } catch (error) {
-    console.error("Erreur lors de la recherche par QR code:", error);
     showNotification(
       `Badge ID scanné: ${decodedText} - Visiteur non trouvé`,
       "error"
@@ -222,19 +219,19 @@ async function confirmerSortie() {
     return;
   }
 
-  // Vérifier qu'on a bien une visite active avec un badge_id
-  if (!visiteurCourant.last_visit || !visiteurCourant.last_visit.badge_id) {
-    showNotification(
-      "Impossible de trouver le badge de la visite active",
-      "error"
-    );
+  // Vérifier qu'on a bien un badge_id (soit dans le visiteur, soit dans last_visit)
+  let badgeId =
+    visiteurCourant.badge_id || visiteurCourant.last_visit?.badge_id;
+
+  if (!badgeId) {
+    showNotification("Impossible de trouver le badge ID du visiteur", "error");
     return;
   }
 
   try {
     // Préparer les données pour la sortie selon la doc API Laravel
     const sortieData = {
-      badge_id: visiteurCourant.last_visit.badge_id,
+      badge_id: badgeId,
     };
 
     await enregistrerSortie(sortieData);
@@ -339,7 +336,7 @@ function startQRScannerSortie() {
 function onQRScanErrorSortie(error) {
   // Ne pas afficher les erreurs de scan en continu, juste les erreurs importantes
   if (error && !error.includes("NotFoundException")) {
-    console.warn("Erreur scanner QR sortie:", error);
+    // Optionnel : log les erreurs importantes seulement
   }
 }
 

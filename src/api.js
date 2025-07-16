@@ -19,11 +19,14 @@ async function apiCall(endpoint, options = {}) {
 
     const response = await fetch(url, config);
 
+    // Cloner immédiatement la réponse pour éviter les problèmes
+    const responseClone = response.clone();
+
     if (!response.ok) {
-      // Essayer de récupérer le message d'erreur détaillé de l'API
+      // Utiliser le clone pour lire l'erreur
       let errorMessage = `Erreur API: ${response.status}`;
       try {
-        const errorData = await response.json();
+        const errorData = await responseClone.json();
 
         if (errorData.message) {
           errorMessage += ` - ${errorData.message}`;
@@ -31,11 +34,15 @@ async function apiCall(endpoint, options = {}) {
         if (errorData.errors) {
           errorMessage += ` - Erreurs: ${JSON.stringify(errorData.errors)}`;
         }
-      } catch (e) {}
+      } catch (e) {
+        // Erreur lors du parsing JSON d'erreur
+      }
       throw new Error(errorMessage);
     }
 
-    return await response.json();
+    // Utiliser le clone pour lire les données de succès
+    const result = await responseClone.json();
+    return result;
   } catch (error) {
     throw error;
   }
