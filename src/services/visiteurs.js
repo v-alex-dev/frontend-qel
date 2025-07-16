@@ -54,18 +54,17 @@ async function getVisiteurByBadgeId(badgeId) {
       `/v1/visitor/badge?badge_id=${encodedBadgeId}`
     );
 
-    // Adapter la réponse selon la structure retournée par Laravel
-    if (result && result.visit && result.visit.visitor) {
+    // Adapter la réponse selon la structure RÉELLE retournée par Laravel
+    if (result && result.visitor && result.last_visit) {
       const visiteur = {
-        ...result.visit.visitor,
-        last_visit: result.visit,
+        ...result.visitor,
+        last_visit: result.last_visit,
       };
       return visiteur;
     } else {
       throw new Error("Visiteur non trouvé");
     }
   } catch (error) {
-    console.error("Erreur détaillée:", error);
     throw error;
   }
 }
