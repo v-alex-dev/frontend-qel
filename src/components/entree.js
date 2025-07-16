@@ -869,7 +869,7 @@ function createPrintWindow(badgeData, badgeId) {
         }
         
         .badge {
-            width: 85mm;
+            width: 100mm;
             height: 54mm;
             background: white;
             border: 2px solid #333;
@@ -905,7 +905,7 @@ function createPrintWindow(badgeData, badgeId) {
         }
         
         .qr-section {
-            width: 60px;
+            width: 90px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -914,8 +914,8 @@ function createPrintWindow(badgeData, badgeId) {
         }
         
         .qr-code {
-            width: 50px;
-            height: 50px;
+            width: 80px;
+            height: 80px;
             border: 1px solid #ccc;
             display: flex;
             align-items: center;
@@ -1006,8 +1006,8 @@ function createPrintWindow(badgeData, badgeId) {
           printWindow.document.getElementById("badge-qrcode-print"),
           {
             text: badgeId,
-            width: 50,
-            height: 50,
+            width: 80,
+            height: 80,
             colorDark: "#000000",
             colorLight: "#ffffff",
             correctLevel: printWindow.QRCode.CorrectLevel.M,
@@ -1017,7 +1017,7 @@ function createPrintWindow(badgeData, badgeId) {
         // Fallback si QRCode n'est pas disponible
         const qrContainer =
           printWindow.document.getElementById("badge-qrcode-print");
-        qrContainer.innerHTML = `<div style="font-size:8px;text-align:center;padding:15px;">${badgeId}</div>`;
+        qrContainer.innerHTML = `<div style="font-size:10px;text-align:center;padding:20px;">${badgeId}</div>`;
       }
 
       // Lancer l'impression automatiquement après un court délai
