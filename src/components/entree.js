@@ -7,10 +7,21 @@ import {
   getVisiteurByBadgeId,
 } from "../services/visiteurs.js";
 import { isValidEmail, showNotification, cleanFormData } from "../utils.js";
+import {
+  generateQRCode,
+  initQRScanner,
+  stopQRScanner,
+  isQRLibrariesLoaded,
+} from "../utils/qrcode.js";
+import {
+  printVisitorBadge,
+  formatBadgeDataForPrint,
+} from "../utils/printBadge.js";
 
 // Variables globales pour stocker les données
 let personnel = [];
 let formations = [];
+let currentQRScanner = null; // Pour gérer le scanner QR actuel
 
 // Initialiser le composant d'entrée
 async function initEntreeComponent() {
@@ -66,32 +77,56 @@ function createEntreeInterface() {
             <div class="bg-white p-6 rounded-lg shadow-lg">
                 <h2 class="text-xl font-bold text-center mb-4 text-green-600">Visiteur de retour ?</h2>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <!-- Recherche par badge ID -->
-                <div class="max-w-md mx-auto">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Badge id</label>
-                    <div class="flex gap-2">
-                        <input type="text" id="search-badgeId" placeholder="Votre badge ID"
-                               class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
-                        <button type="button" id="search-by-badgeId" 
-                                class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
-                            Rechercher
+                <!-- Switch entre méthodes de recherche -->
+                <div class="flex justify-center mb-4">
+                    <div class="flex bg-gray-100 rounded-lg p-1">
+                        <button id="btn-search-manual" class="px-4 py-2 rounded-md bg-green-600 text-white font-medium transition-colors">
+                            🔍 Recherche manuelle
+                        </button>
+                        <button id="btn-search-qr" class="px-4 py-2 rounded-md bg-gray-300 text-gray-700 font-medium transition-colors">
+                            📱 Scanner QR Code
                         </button>
                     </div>
                 </div>
-                
-                <!-- Recherche par email -->
-                <div class="max-w-md mx-auto">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <div class="flex gap-2">
-                        <input type="email" id="search-email" placeholder="votre@email.com"
-                               class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
-                        <button type="button" id="search-by-email" 
-                                class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
-                            Rechercher
-                        </button>
+
+                <!-- Section recherche manuelle -->
+                <div id="section-search-manual" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Recherche par badge ID -->
+                    <div class="max-w-md mx-auto">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Badge id</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="search-badgeId" placeholder="Votre badge ID"
+                                   class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <button type="button" id="search-by-badgeId" 
+                                    class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
+                                Rechercher
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Recherche par email -->
+                    <div class="max-w-md mx-auto">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <div class="flex gap-2">
+                            <input type="email" id="search-email" placeholder="votre@email.com"
+                                   class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <button type="button" id="search-by-email" 
+                                    class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
+                                Rechercher
+                            </button>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Section scanner QR -->
+                <div id="section-search-qr" class="hidden">
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600 mb-4">Scannez votre QR code visiteur pour retrouver vos informations</p>
+                        <div id="qr-scanner" class="max-w-md mx-auto"></div>
+                        <button id="btn-stop-scanner" class="mt-4 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 hidden">
+                            ❌ Arrêter le scanner
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Résultat de recherche -->
@@ -108,6 +143,8 @@ function createEntreeInterface() {
                     </div>
                 </div>
             </div>
+
+
 
             <!-- Formulaire d'entrée -->
             <div class="bg-white p-6 rounded-lg shadow-lg">
@@ -286,6 +323,11 @@ function attachEntreeEvents() {
   const searchByEmail = document.getElementById("search-by-email");
   const searchByBadgeId = document.getElementById("search-by-badgeId");
 
+  // Nouveaux boutons pour le switch QR/Manuel
+  const btnSearchManual = document.getElementById("btn-search-manual");
+  const btnSearchQR = document.getElementById("btn-search-qr");
+  const btnStopScanner = document.getElementById("btn-stop-scanner");
+
   console.log(
     "attachEntreeEvents: Nombre de boutons radio trouvés:",
     typeVisiteRadios.length
@@ -308,6 +350,19 @@ function attachEntreeEvents() {
 
   if (searchByBadgeId) {
     searchByBadgeId.addEventListener("click", rechercherParBadgeId);
+  }
+
+  // Gérer le switch entre recherche manuelle et QR
+  if (btnSearchManual) {
+    btnSearchManual.addEventListener("click", switchToManualSearch);
+  }
+
+  if (btnSearchQR) {
+    btnSearchQR.addEventListener("click", switchToQRSearch);
+  }
+
+  if (btnStopScanner) {
+    btnStopScanner.addEventListener("click", stopCurrentScanner);
   }
 }
 
@@ -526,25 +581,458 @@ function afficherBadge(apiResponse) {
   }
 
   divBadge.innerHTML = `
-        <div class="bg-white border-2 border-gray-300 rounded-lg p-6 max-w-md mx-auto">
-            <h3 class="text-xl font-bold text-center mb-4">Badge Visiteur</h3>
-            <div class="space-y-2">
-                <p><strong>Nom:</strong> ${visitor.last_name}</p>
-                <p><strong>Prénom:</strong> ${visitor.first_name}</p>
-                <p><strong>Local:</strong> ${destination}</p>
-                <p><strong>À voir:</strong> ${contact}</p>
-                <p><strong>Badge ID:</strong> ${badgeId}</p>
+    <div class="max-w-md mx-auto bg-white rounded-lg shadow-lg overflow-hidden border-2 border-gray-300">
+        <!-- Badge simple inspiré du PDF -->
+        <div id="printable-badge" style="
+            padding: 20px;
+            display: flex;
+            gap: 16px;
+            min-height: 160px;
+        ">
+            <!-- Informations visiteur -->
+            <div style="flex: 1;">
+                <div style="
+                    font-size: 20px;
+                    font-weight: bold;
+                    margin-bottom: 12px;
+                    color: #000;
+                ">
+                    ${visitor.first_name} ${visitor.last_name}
+                </div>
+                
+                <div style="font-size: 14px; line-height: 1.6; color: #333;">
+                    <div style="margin-bottom: 4px;">
+                        <strong>Local:</strong> ${destination}
+                    </div>
+                    <div style="margin-bottom: 4px;">
+                        <strong>Voir:</strong> ${contact}
+                    </div>
+                    <div style="margin-bottom: 4px;">
+                        <strong>Type:</strong> ${
+                          visit.purpose === "visite" ? "visite" : "formation"
+                        }
+                    </div>
+                    <div style="margin-bottom: 4px;">
+                        <strong>Badge ID:</strong> ${badgeId}
+                    </div>
+                </div>
             </div>
-            <div class="mt-4 text-center">
+            
+            <!-- Section QR Code -->
+            <div style="
+                width: 80px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            ">
+                <div style="
+                    border: 1px solid #ccc;
+                    padding: 4px;
+                    background: white;
+                ">
+                    <div id="badge-qrcode" style="width: 60px; height: 60px;"></div>
+                </div>
+                <div style="
+                    font-size: 10px;
+                    margin-top: 4px;
+                    text-align: center;
+                    color: #666;
+                ">
+                    Sca
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer du badge -->
+        <div style="
+            border-top: 1px solid #eee;
+            padding: 8px 20px;
+            font-size: 10px;
+            color: #666;
+            text-align: center;
+            background: #f9f9f9;
+        ">
+            Valide le ${new Date().toLocaleDateString(
+              "fr-FR"
+            )} à ${new Date().toLocaleTimeString("fr-FR")} • www.cepegra.be
+        </div>
+        
+        <!-- Boutons d'action -->
+        <div class="p-4 text-center space-y-2">
+            <div class="flex gap-2 justify-center">
+                <button id="print-badge-btn" 
+                        class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm">
+                    🖨️ Imprimer ce Badge
+                </button>
                 <button onclick="this.parentElement.parentElement.parentElement.innerHTML=''" 
-                        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm">
                     Fermer
                 </button>
             </div>
+            <p class="text-xs text-gray-500">Le badge s'ouvrira dans une nouvelle fenêtre pour l'impression</p>
         </div>
-    `;
+    </div>
+  `;
 
   divBadge.classList.remove("hidden");
+
+  // Préparer les données pour l'impression du badge
+  const badgeData = formatBadgeDataForPrint(apiResponse, personnel, formations);
+
+  // Générer le QR code avec le badge ID
+  // Attendre un peu que le DOM soit mis à jour
+  setTimeout(() => {
+    if (isQRLibrariesLoaded()) {
+      generateQRCode(badgeId, "badge-qrcode");
+    } else {
+      console.warn("Librairies QR code non disponibles");
+      document.getElementById("badge-qrcode").innerHTML =
+        '<p class="text-xs text-gray-500">QR code non disponible</p>';
+    }
+
+    // Attacher l'événement d'impression du badge
+    const printBtn = document.getElementById("print-badge-btn");
+    if (printBtn) {
+      printBtn.addEventListener("click", () => {
+        // Créer une fenêtre d'impression dédiée
+        createPrintWindow(badgeData, badgeId);
+      });
+    }
+  }, 100);
+}
+
+// === NOUVELLES FONCTIONS QR CODE ===
+
+// Basculer vers la recherche manuelle
+function switchToManualSearch() {
+  // Arrêter le scanner s'il est actif
+  stopCurrentScanner();
+
+  // Mettre à jour l'interface
+  document
+    .getElementById("btn-search-manual")
+    .classList.remove("bg-gray-300", "text-gray-700");
+  document
+    .getElementById("btn-search-manual")
+    .classList.add("bg-green-600", "text-white");
+
+  document
+    .getElementById("btn-search-qr")
+    .classList.remove("bg-green-600", "text-white");
+  document
+    .getElementById("btn-search-qr")
+    .classList.add("bg-gray-300", "text-gray-700");
+
+  // Afficher/cacher les sections
+  document.getElementById("section-search-manual").classList.remove("hidden");
+  document.getElementById("section-search-qr").classList.add("hidden");
+}
+
+// Basculer vers le scanner QR
+function switchToQRSearch() {
+  // Vérifier que les librairies QR sont disponibles
+  if (!isQRLibrariesLoaded()) {
+    showNotification(
+      "Les librairies QR code ne sont pas encore chargées. Veuillez réessayer.",
+      "error"
+    );
+    return;
+  }
+
+  // Mettre à jour l'interface
+  document
+    .getElementById("btn-search-qr")
+    .classList.remove("bg-gray-300", "text-gray-700");
+  document
+    .getElementById("btn-search-qr")
+    .classList.add("bg-green-600", "text-white");
+
+  document
+    .getElementById("btn-search-manual")
+    .classList.remove("bg-green-600", "text-white");
+  document
+    .getElementById("btn-search-manual")
+    .classList.add("bg-gray-300", "text-gray-700");
+
+  // Afficher/cacher les sections
+  document.getElementById("section-search-manual").classList.add("hidden");
+  document.getElementById("section-search-qr").classList.remove("hidden");
+
+  // Démarrer le scanner QR
+  startQRScanner();
+}
+
+// Démarrer le scanner QR pour la recherche
+function startQRScanner() {
+  // Arrêter le scanner précédent s'il existe
+  stopCurrentScanner();
+
+  // Vider le conteneur du scanner
+  document.getElementById("qr-scanner").innerHTML = "";
+
+  // Démarrer le nouveau scanner
+  currentQRScanner = initQRScanner(
+    "qr-scanner",
+    onQRCodeScanned,
+    onQRScanError
+  );
+
+  // Afficher le bouton d'arrêt
+  document.getElementById("btn-stop-scanner").classList.remove("hidden");
+}
+
+// Callback quand un QR code est scanné avec succès
+async function onQRCodeScanned(decodedText, decodedResult) {
+  console.log(`QR Code scanné: ${decodedText}`);
+
+  // Arrêter le scanner
+  stopCurrentScanner();
+
+  // Essayer de rechercher le visiteur avec le badge ID scanné
+  try {
+    showNotification("QR Code détecté ! Recherche en cours...", "info");
+    const visiteur = await getVisiteurByBadgeId(decodedText);
+    afficherResultatRecherche(visiteur);
+    showNotification("Visiteur trouvé via QR Code !", "success");
+  } catch (error) {
+    console.error("Erreur lors de la recherche par QR code:", error);
+    showNotification(
+      `Badge ID scanné: ${decodedText} - Visiteur non trouvé`,
+      "error"
+    );
+  }
+}
+
+// Callback en cas d'erreur de scan
+function onQRScanError(error) {
+  // Ne pas afficher les erreurs de scan en continu, juste les erreurs importantes
+  if (error && !error.includes("NotFoundException")) {
+    console.warn("Erreur scanner QR:", error);
+  }
+}
+
+// Arrêter le scanner QR actuel
+function stopCurrentScanner() {
+  if (currentQRScanner) {
+    stopQRScanner(currentQRScanner);
+    currentQRScanner = null;
+  }
+
+  // Cacher le bouton d'arrêt
+  const btnStop = document.getElementById("btn-stop-scanner");
+  if (btnStop) {
+    btnStop.classList.add("hidden");
+  }
+
+  // Vider le conteneur du scanner
+  const scannerContainer = document.getElementById("qr-scanner");
+  if (scannerContainer) {
+    scannerContainer.innerHTML = '<p class="text-gray-500">Scanner arrêté</p>';
+  }
+}
+
+// Créer une fenêtre d'impression dédiée pour le badge
+function createPrintWindow(badgeData, badgeId) {
+  // Créer une nouvelle fenêtre pour l'impression
+  const printWindow = window.open("", "_blank", "width=400,height=300");
+
+  if (!printWindow) {
+    alert("Veuillez autoriser les pop-ups pour imprimer le badge");
+    return;
+  }
+
+  // Créer le HTML simple du badge selon le design que tu as montré
+  const badgeHTML = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Badge Visiteur - ${badgeData.firstName} ${badgeData.lastName}</title>
+    <script src="${window.location.origin}/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .badge {
+            width: 85mm;
+            height: 54mm;
+            background: white;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 8mm;
+            display: flex;
+            position: relative;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .badge-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .visitor-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #000;
+        }
+        
+        .visitor-details {
+            font-size: 11px;
+            line-height: 1.4;
+            color: #333;
+        }
+        
+        .detail-line {
+            margin-bottom: 2px;
+        }
+        
+        .qr-section {
+            width: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+        }
+        
+        .qr-code {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .qr-label {
+            font-size: 8px;
+            text-align: center;
+            margin-top: 4px;
+            color: #666;
+        }
+        
+        .badge-footer {
+            position: absolute;
+            bottom: 4px;
+            left: 8mm;
+            right: 8mm;
+            font-size: 8px;
+            color: #666;
+            text-align: center;
+            border-top: 1px solid #eee;
+            padding-top: 2px;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+            
+            .badge {
+                box-shadow: none;
+                margin: 0;
+            }
+        }
+        
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+    </style>
+</head>
+<body>
+    <div class="badge">
+        <div class="badge-content">
+            <div>
+                <div class="visitor-name">${badgeData.firstName} ${
+    badgeData.lastName
+  }</div>
+                <div class="visitor-details">
+                    <div class="detail-line">Local: ${
+                      badgeData.destination
+                    }</div>
+                    <div class="detail-line">Voir: ${badgeData.contact}</div>
+                    <div class="detail-line">Type: ${
+                      badgeData.purpose === "visite" ? "visite" : "formation"
+                    }</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="qr-section">
+            <div id="badge-qrcode-print" class="qr-code"></div>
+            <div class="qr-label">Sca</div>
+        </div>
+        
+        <div class="badge-footer">
+            Valide le ${new Date().toLocaleDateString(
+              "fr-FR"
+            )} à ${new Date().toLocaleTimeString("fr-FR")} • www.cepegra.be
+        </div>
+    </div>
+</body>
+</html>`;
+
+  // Écrire le contenu dans la nouvelle fenêtre
+  printWindow.document.write(badgeHTML);
+  printWindow.document.close();
+
+  // Attendre que le contenu soit chargé puis générer le QR code
+  printWindow.onload = () => {
+    // Générer le QR code dans la fenêtre d'impression
+    setTimeout(() => {
+      if (typeof printWindow.QRCode !== "undefined") {
+        new printWindow.QRCode(
+          printWindow.document.getElementById("badge-qrcode-print"),
+          {
+            text: badgeId,
+            width: 50,
+            height: 50,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: printWindow.QRCode.CorrectLevel.M,
+          }
+        );
+      } else {
+        // Fallback si QRCode n'est pas disponible
+        const qrContainer =
+          printWindow.document.getElementById("badge-qrcode-print");
+        qrContainer.innerHTML = `<div style="font-size:8px;text-align:center;padding:15px;">${badgeId}</div>`;
+      }
+
+      // Lancer l'impression automatiquement après un court délai
+      setTimeout(() => {
+        printWindow.print();
+
+        // Fermer la fenêtre après impression (optionnel)
+        printWindow.onafterprint = () => {
+          printWindow.close();
+        };
+      }, 1000);
+    }, 500);
+  };
+
+  return printWindow;
 }
 
 export { initEntreeComponent };
