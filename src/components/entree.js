@@ -66,7 +66,8 @@ function createEntreeInterface() {
             <div class="bg-white p-6 rounded-lg shadow-lg">
                 <h2 class="text-xl font-bold text-center mb-4 text-green-600">Visiteur de retour ?</h2>
                 
-                <!-- Recherche par badge ID -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <!-- Recherche par badge ID -->
                 <div class="max-w-md mx-auto">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Badge id</label>
                     <div class="flex gap-2">
@@ -90,6 +91,7 @@ function createEntreeInterface() {
                             Rechercher
                         </button>
                     </div>
+                </div>
                 </div>
                 
                 <!-- Résultat de recherche -->
